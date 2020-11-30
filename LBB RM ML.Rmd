@@ -1,0 +1,79 @@
+---
+title: "LBB RM ML"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Library 
+```{r}
+library(tidyverse)
+library(lubridate)
+library(GGally)
+library(MLmetrics)
+library(lmtest)
+library(car)
+library(plotly)
+```
+
+```{r}
+Graduate <- read.csv("data_input/Admission_Predict_Ver1.1.csv")
+head(Graduate)
+```
+```{r}
+anyNA(Graduate)
+```
+```{r}
+str(Graduate)
+```
+```{r}
+head(Graduate)
+```
+
+Untuk mempersempit scope dari report ini, maka akan dibuat model untuk memprediksi chance masuk ke universitas dengan rating tertinggi  dan kita hilangkan kolom Serial No. karena tidak digunakan 
+
+```{r}
+Graduate5 <- Graduate %>% 
+  filter(University.Rating == 5) %>% 
+  select(-Serial.No.)
+```
+
+# Correlation Test
+
+Untuk menentukkan kemungkinan masuk ke program master sebuah universitas maka coba dilakukan test korelasi faktor-faktor yang menentukkan 
+
+```{r}
+ggcorr(Graduate5, label = T)
+```
+
+# Cross Validasi Model 
+
+```{r}
+RNGkind(sample.kind = "Rounding")
+set.seed(100)
+intrain <- sample(nrow(Graduate), 0.8*nrow(Graduate5))
+graduate_train <- Graduate5[intrain,]
+graduate_test <- Graduate5[-intrain,]
+```
+```{r}
+model <- lm(Chance.of.Admit ~ . , graduate_train)
+```
+
+Prediktor yang digunakan adalah GRE.Score, TOEFL.Score, SOP, CGPA, Research
+
+```{r}
+modelfix <- lm(Chance.of.Admit ~ GRE.Score + TOEFL.Score + SOP + CGPA + Research, graduate_train)
+```
+
+
+```{r}
+pred <-  predict(modelfix, newdata = graduate_test)
+RMSE(y_pred = pred, y_true = Graduate5$Chance.of.Admit)
+```
+# Conclusion
+
+Menilai dari RMSE yang didapatkan maka dapat disimpulkan model yang digunakan sudah baik karena memiliki RMSE yang rendah, serta prediktor yang digunakan sudah cukup sederhan karena memiliki korelasi yang tinggi dengan target.
+
+
